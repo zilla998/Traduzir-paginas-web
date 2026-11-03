@@ -1302,6 +1302,13 @@ Promise.all([twpConfig.onReady(), getTabHostName()]).then(function (_) {
     } else if (request.action === "currentTargetLanguage") {
       sendResponse(currentTargetLanguage);
     } else if (request.action === "detectLanguageUsingTextContent") {
+      if (typeof chrome.i18n.detectLanguage !== "function") {
+        // WebKit has no i18n.detectLanguage, fall back to the page's lang
+        sendResponse(
+          (document.documentElement.lang || "und").split("-")[0].toLowerCase()
+        );
+        return true;
+      }
       if (textContentLanguageDetectionPromise) {
         textContentLanguageDetectionPromise.then((result) =>
           sendResponse(result)

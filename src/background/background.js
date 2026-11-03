@@ -2,26 +2,31 @@
 
 // get mimetype
 var tabToMimeType = {};
-chrome.webRequest.onHeadersReceived.addListener(
-  function (details) {
-    if (details.tabId !== -1) {
-      let contentTypeHeader = null;
-      for (const header of details.responseHeaders) {
-        if (header.name.toLowerCase() === "content-type") {
-          contentTypeHeader = header;
-          break;
+try {
+  chrome.webRequest.onHeadersReceived.addListener(
+    function (details) {
+      if (details.tabId !== -1) {
+        let contentTypeHeader = null;
+        for (const header of details.responseHeaders) {
+          if (header.name.toLowerCase() === "content-type") {
+            contentTypeHeader = header;
+            break;
+          }
         }
+        tabToMimeType[details.tabId] =
+          contentTypeHeader && contentTypeHeader.value.split(";", 1)[0];
       }
-      tabToMimeType[details.tabId] =
-        contentTypeHeader && contentTypeHeader.value.split(";", 1)[0];
-    }
-  },
-  {
-    urls: ["*://*/*"],
-    types: ["main_frame"],
-  },
-  ["responseHeaders"]
-);
+    },
+    {
+      urls: ["*://*/*"],
+      types: ["main_frame"],
+    },
+    ["responseHeaders"]
+  );
+} catch (e) {
+  // webRequest is missing or limited in some browsers (e.g. WebKit)
+  console.warn(e);
+}
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "getMainFramePageLanguageState") {
@@ -71,7 +76,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     try {
       if (
         (platformInfo.isMobile.any && !platformInfo.isFirefox) ||
-        (platformInfo.isDesktop.any && platformInfo.isOpera)
+        (platformInfo.isDesktop.any && platformInfo.isOpera) ||
+        typeof chrome.tabs.detectLanguage !== "function"
       ) {
         chrome.tabs.sendMessage(
           sender.tab.id,
@@ -359,36 +365,41 @@ if (typeof chrome.contextMenus !== "undefined") {
     chrome.contextMenus.remove("browserAction-translate-pdf", checkedLastError);
     chrome.contextMenus.remove("pageAction-translate-pdf", checkedLastError);
 
-    chrome.contextMenus.create({
-      id: "browserAction-showPopup",
-      title: twpI18n.getMessage("btnShowPopup"),
-      contexts: ["browser_action"],
-    });
-    chrome.contextMenus.create({
-      id: "pageAction-showPopup",
-      title: twpI18n.getMessage("btnShowPopup"),
-      contexts: ["page_action"],
-    });
-    chrome.contextMenus.create({
-      id: "never-translate",
-      title: twpI18n.getMessage("btnNeverTranslate"),
-      contexts: ["browser_action", "page_action"],
-    });
-    chrome.contextMenus.create({
-      id: "more-options",
-      title: twpI18n.getMessage("btnMoreOptions"),
-      contexts: ["browser_action", "page_action"],
-    });
-    chrome.contextMenus.create({
-      id: "browserAction-translate-pdf",
-      title: twpI18n.getMessage("msgTranslatePDF"),
-      contexts: ["browser_action"],
-    });
-    chrome.contextMenus.create({
-      id: "pageAction-translate-pdf",
-      title: twpI18n.getMessage("msgTranslatePDF"),
-      contexts: ["page_action"],
-    });
+    // browser_action/page_action contexts are rejected (thrown) by some browsers, e.g. WebKit
+    try {
+      chrome.contextMenus.create({
+        id: "browserAction-showPopup",
+        title: twpI18n.getMessage("btnShowPopup"),
+        contexts: ["browser_action"],
+      });
+      chrome.contextMenus.create({
+        id: "pageAction-showPopup",
+        title: twpI18n.getMessage("btnShowPopup"),
+        contexts: ["page_action"],
+      });
+      chrome.contextMenus.create({
+        id: "never-translate",
+        title: twpI18n.getMessage("btnNeverTranslate"),
+        contexts: ["browser_action", "page_action"],
+      });
+      chrome.contextMenus.create({
+        id: "more-options",
+        title: twpI18n.getMessage("btnMoreOptions"),
+        contexts: ["browser_action", "page_action"],
+      });
+      chrome.contextMenus.create({
+        id: "browserAction-translate-pdf",
+        title: twpI18n.getMessage("msgTranslatePDF"),
+        contexts: ["browser_action"],
+      });
+      chrome.contextMenus.create({
+        id: "pageAction-translate-pdf",
+        title: twpI18n.getMessage("msgTranslatePDF"),
+        contexts: ["page_action"],
+      });
+    } catch (e) {
+      console.warn(e);
+    }
   };
   updateActionContextMenu();
 
