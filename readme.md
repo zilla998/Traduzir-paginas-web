@@ -24,6 +24,17 @@ Translate your page in real time using Google, Bing or Yandex.
 - If you installed the extension in these browsers previously through a registry modification, please undo those changes.\
 Note: If you want to undo registry changes, download and run this [twp-registry-uninstall-self.reg](https://raw.githubusercontent.com/FilipePS/Traduzir-paginas-web/master/dist/chromium/twp-registry-uninstall-self.reg). If you want a deeper removal download and run this other file [twp-registry-uninstall-all.reg](https://raw.githubusercontent.com/FilipePS/Traduzir-paginas-web/master/dist/chromium/twp-registry-uninstall-all.reg)
 
+### Yab and other WebKit-based browsers
+This fork works in [Yab](https://yetanotherbrowser.com), which runs Chrome extensions on WebKit's extension engine (the one Safari uses). It is loaded as an unpacked Manifest V2 extension, which Yab accepts as is.
+
+1. Build the Chromium version. Copy the `src` folder, then in the copy rename `manifest.json` to `firefox_manifest.json` and `chrome_manifest.json` to `manifest.json`. (`npx gulp` does the same and puts the result in `build/`.)
+2. In Yab open **Settings › Extensions › Add Extension**, choose **A Folder on This Mac** as the source, pick the folder from step 1 and confirm.
+3. Open a page in another language and press <kbd>⌥</kbd><kbd>T</kbd> (Alt+T), or click the TWP icon in the extensions panel (<kbd>⌘</kbd><kbd>E</kbd>).
+
+Notes:
+- After changing the code, remove the extension and add it again. **Reload** in Yab re-reads content scripts but does not restart the background page.
+- WebKit rejects the `browser_action`/`page_action` context menu contexts and may lack `webRequest`, `tabs.detectLanguage` and `i18n.detectLanguage`. The code handles this, so the background script is no longer aborted.
+
 ## Screenshots
 | Menu 1 | Menu 2 | Translated |
 | :--: | :--: | :--: |
